@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Équilibra‑Maths ⚖️ — Niveaux & Amusement</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --wood:#78350f;
+    }
+    body { font-family: 'Poppins', sans-serif; }
+    .balance-beam { height: 12px; width: 90%; background: var(--wood); border-radius: 6px; position: relative; }
+    .fulcrum { width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-top: 40px solid var(--wood); }
+    .equation-side { width: 45%; min-height: 220px; border: 3px dashed #eab308; border-radius: 16px; padding: 16px; transition: background-color .25s, transform .2s; display: flex; flex-wrap: wrap; gap: 12px; align-content: flex-start; }
+    .equation-side.drag-over { background-color: #fef9c3; transform: scale(1.02); }
+    .item { width: 64px; height: 64px; border-radius: 9999px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 700; color: white; cursor: grab; user-select: none; transition: transform .2s; box-shadow: 0 4px 6px rgba(0,0,0,.1), inset 0 -4px 4px rgba(0,0,0,.2); }
+    .item:active { cursor: grabbing; transform: scale(1.08); z-index: 50; }
+    .x-box { background: #be123c; border-radius: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; }
+    .gem-pos { background: #16a34a; }
+    .gem-neg { background: #dc2626; }
+    .gem-neutral { background: #2563eb; }
+    .chip { border-radius: 9999px; }
+    .feedback-modal { transition: opacity .45s, transform .45s; }
+    .feedback-modal.hidden { opacity: 0; transform: scale(.92); pointer-events: none; }
+    .canceling { animation: cancel-out .4s ease-out forwards; }
+    @keyframes cancel-out { to { transform: scale(.1) rotate(10deg); opacity: 0; } }
+    .pulse { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.03);} }
+  </style>
+</head>
+<body class="bg-amber-50 antialiased text-amber-900">
+  <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+    <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-amber-900">Équilibra‑Maths ⚖️</h1>
+        <p class="text-amber-700 mt-1">Isole la boîte <span class="font-bold bg-rose-700 text-white px-2 py-0.5 rounded">x</span> pour trouver la solution !</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="bg-white/70 backdrop-blur px-4 py-2 rounded-2xl shadow flex items-center gap-2">
+          <span class="text-sm text-amber-700">Niveau</span>
+          <select id="level-select" class="bg-amber-100/80 text-amber-900 font-semibold rounded-xl px-3 py-1 focus:outline-none">
+            <option value="1">1 · a=1</option>
+            <option value="2">2 · a≤3</option>
+            <option value="3">3 · négatifs possibles</option>
+            <option value="4">4 · x des deux côtés</option>
+            <option value="5">5 · coefficient à diviser</option>
+          </select>
+        </div>
+        <div class="bg-white/70 backdrop-blur px-4 py-2 rounded-2xl shadow flex items-center gap-2">
+          <span class="text-sm text-amber-700">Score</span>
+          <span id="score" class="text-xl font-extrabold">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Barre de progression simple -->
+    <div class="w-full bg-amber-200/60 rounded-xl h-3 overflow-hidden mb-4">
+      <div id="progress" class="h-full bg-amber-500 rounded-xl" style="width: 0%"></div>
+    </div>
+
+    <!-- Équation textuelle -->
+    <div id="equation-display" class="text-3xl font-bold my-4 p-4 bg-white/70 rounded-xl shadow-inner text-center"></div>
+
+    <!-- Balance visuelle -->
+    <div class="flex justify-center items-end relative mb-4 gap-3">
+      <div id="left-side" class="equation-side" data-side="left" aria-label="côté gauche"></div>
+      <div class="balance-beam absolute bottom-0 left-1/2 -translate-x-1/2"></div>
+      <div class="fulcrum"></div>
+      <div id="right-side" class="equation-side" data-side="right" aria-label="côté droit"></div>
+    </div>
+
+    <!-- Contrôles -->
+    <div class="mt-6 flex flex-wrap justify-center items-center gap-3">
+      <button id="new-equation-btn" class="px-5 py-2.5 bg-amber-500 text-white font-bold rounded-lg shadow-lg hover:bg-amber-600 transition-transform hover:scale-[1.03]">Nouvelle équation</button>
+      <button id="reset-btn" class="px-4 py-2 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition">Réinitialiser</button>
+      <button id="hint-btn" class="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition">Astuce</button>
+      <button id="divide-btn" disabled class="px-4 py-2 bg-emerald-500 disabled:opacity-40 text-white font-bold rounded-lg shadow hover:bg-emerald-600 transition">Diviser par <span id="divide-by">1</span></button>
+    </div>
+
+    <!-- Légende rapide -->
+    <div class="mt-4 text-center text-sm text-amber-700">Astuce : déplace une gemme vers l'autre côté pour soustraire/ajouter la même valeur aux deux côtés. Les <span class="font-semibold">x</span> s'annulent par paires gauche/droite.</div>
+  </div>
+
+  <!-- Modale de succès -->
+  <div id="success-modal" class="feedback-modal hidden fixed inset-0 bg-black/50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all max-w-sm w-full">
+      <div class="text-6xl mb-2">🎉</div>
+      <h2 class="text-3xl font-bold text-green-600 mb-2">Bravo !</h2>
+      <p class="text-lg text-gray-700 mb-4">Tu as trouvé la solution :</p>
+      <p id="solution-text" class="text-2xl font-extrabold bg-green-100 text-green-700 p-3 rounded-lg"></p>
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <button id="next-level-btn" class="px-4 py-2 bg-green-600 text-white font-bold rounded-lg shadow hover:bg-green-700 transition">Niveau suivant</button>
+        <button id="replay-btn" class="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg shadow hover:bg-amber-700 transition">Rejouer ce niveau</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== Éléments DOM ======
+    const leftSide = document.getElementById('left-side');
+    const rightSide = document.getElementById('right-side');
+    const equationDisplay = document.getElementById('equation-display');
+    const newEqBtn = document.getElementById('new-equation-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const hintBtn = document.getElementById('hint-btn');
+    const divideBtn = document.getElementById('divide-btn');
+    const divideBySpan = document.getElementById('divide-by');
+    const levelSelect = document.getElementById('level-select');
+    const scoreEl = document.getElementById('score');
+    const progressEl = document.getElementById('progress');
+
+    const successModal = document.getElementById('success-modal');
+    const nextLevelBtn = document.getElementById('next-level-btn');
+    const replayBtn = document.getElementById('replay-btn');
+    const solutionText = document.getElementById('solution-text');
+
+    // ====== État du jeu ======
+    let state = {
+      level: 1,
+      score: 0,
+      // Modèle d'équation général : (a)x + b = (c)x + d
+      a: 1, b: 0, c: 0, d: 0,
+      xSolution: 0,
+      original: {},
+      solvedCount: 0
+    };
+
+    // ====== Utilitaires sonores minimalistes (WebAudio) ======
+    const AudioFX = (() => {
+      let ctx;
+      function beep(freq = 880, time = 0.12, type = 'sine', gain = 0.04){
+        ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type; o.frequency.value = freq;
+        g.gain.value = gain; o.connect(g); g.connect(ctx.destination);
+        o.start(); setTimeout(()=>o.stop(), time*1000);
+      }
+      return { success(){ beep(880,.12,'triangle'); setTimeout(()=>beep(1320,.12,'triangle'),120); }, pop(){ beep(200,.06,'square',.03); }, hint(){ beep(600,.09,'sine',.03); } };
+    })();
+
+    // ====== Création d'items ======
+    function createItem(type, value, parent){
+      if(type === 'x'){
+        for(let i=0;i<value;i++){
+          const el = document.createElement('div');
+          el.className = 'item x-box';
+          el.textContent = 'x';
+          el.dataset.type = 'x';
+          el.dataset.value = 1;
+          el.draggable = true; // On autorise le déplacement des x (pour les annuler gauche/droite)
+          parent.appendChild(el);
+        }
+      } else if(type === 'gem'){
+        const el = document.createElement('div');
+        let cls = 'gem-neutral';
+        if(value>0) cls = 'gem-pos';
+        if(value<0) cls = 'gem-neg';
+        el.className = `item ${cls}`;
+        el.textContent = (value>0?'+':'') + value;
+        el.dataset.type = 'gem';
+        el.dataset.value = value;
+        el.draggable = true;
+        parent.appendChild(el);
+      }
+    }
+
+    // ====== Génération d'équations (solutions entières) ======
+    function randInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+    function generate(level = state.level){
+      let a,b,c,d,x;
+      if(level === 1){
+        a = 1; x = randInt(1,10); b = randInt(-5,4); if(b===0) b = 2; c = 0; d = a*x + b; // x + b = d
+      } else if(level === 2){
+        a = randInt(1,3); x = randInt(1,10); b = randInt(-6,6) || 3; c = 0; d = a*x + b; // a x + b = d
+      } else if(level === 3){
+        a = randInt(1,4); x = randInt(-9,9); if(x===0) x=5; b = randInt(-9,9) || 4; c = 0; d = a*x + b; // signes variés
+      } else if(level === 4){
+        // ax + b = cx + d, avec solution entière
+        x = randInt(-9,9) || 3; // choisit solution puis dérive l'équation
+        a = randInt(1,4); c = randInt(1,4);
+        if(a===c) c = (c%4)+1; // évite a=c (sinon pas d'annulation utile)
+        b = randInt(-8,8); d = a*x + b - c*x; // garantit l'égalité
+      } else { // level 5 – coefficient à diviser
+        x = randInt(-8,8); if(x===0) x=4;
+        const k = randInt(2,4); // coefficient final à diviser
+        // Construire (k x) + b = d avec x solution entière
+        a = k; c = 0; b = randInt(-8,8);
+        d = a*x + b; // kx + b = d  → après gemmes on obtient kx = valeur, puis division
+      }
+      state = { ...state, level, a,b,c,d, xSolution: x, original: {a,b,c,d} };
+      render();
+    }
+
+    // ====== Rendu visuel ======
+    function render(){
+      leftSide.innerHTML = ''; rightSide.innerHTML = '';
+      // Gauche : a x + b ; Droite : c x + d
+      if(state.a) createItem('x', Math.abs(state.a), state.a>=0?leftSide:leftSide); // a est toujours >=1
+      if(state.b) createItem('gem', state.b, leftSide);
+      if(state.c) createItem('x', Math.abs(state.c), state.c>=0?rightSide:rightSide); // c >=0 ici
+      if(state.d) createItem('gem', state.d, rightSide);
+      updateEquationText();
+      addDnDListeners();
+      updateDivideButton();
+    }
+
+    function updateEquationText(){
+      const l = readSide(leftSide); const r = readSide(rightSide);
+      const fmt = (x,g) => {
+        const parts = [];
+        if(x!==0) parts.push(`${x}x`);
+        if(g>0) parts.push(`+ ${g}`);
+        if(g<0) parts.push(`- ${Math.abs(g)}`);
+        return parts.length? parts.join(' ') : '0';
+      };
+      equationDisplay.textContent = `${fmt(l.x, l.g)} = ${fmt(r.x, r.g)}`;
+    }
+
+    function readSide(side){
+      const x = side.querySelectorAll('[data-type="x"]').length;
+      const g = Array.from(side.querySelectorAll('[data-type="gem"]').values()).reduce((s,el)=> s + parseInt(el.dataset.value),0);
+      return { x, g };
+    }
+
+    // ====== Drag & Drop ======
+    let dragged = null;
+
+    function addDnDListeners(){
+      const items = document.querySelectorAll('[draggable="true"]');
+      items.forEach(item => {
+        item.addEventListener('dragstart', e=>{ dragged = e.target; setTimeout(()=> dragged.style.opacity='.5',0); });
+      });
+      [leftSide,rightSide].forEach(side=>{
+        side.addEventListener('dragover', e=>{ e.preventDefault(); side.classList.add('drag-over'); });
+        side.addEventListener('dragleave', ()=> side.classList.remove('drag-over'));
+        side.addEventListener('drop', e=>{
+          e.preventDefault(); side.classList.remove('drag-over');
+          if(!dragged) return;
+          const from = dragged.parentElement; if(from === side) { dragged.style.opacity='1'; dragged=null; return; }
+          const type = dragged.dataset.type;
+          if(type==='gem'){
+            const v = parseInt(dragged.dataset.value);
+            createItem('gem', -v, side); // ajouter l'opposé sur la nouvelle rive
+            from.removeChild(dragged);
+            AudioFX.pop();
+          }
+          if(type==='x'){
+            // déplacer un x de l'autre côté => permettra l'annulation croisée
+            createItem('x', 1, side);
+            from.removeChild(dragged);
+            AudioFX.pop();
+          }
+          dragged.style.opacity='1'; dragged=null;
+          setTimeout(()=>{ simplifyGems(); simplifyXsAcross(); }, 80);
+        });
+      });
+    }
+
+    // ====== Simplifications ======
+    function simplifyGems(){
+      [leftSide, rightSide].forEach(side => {
+        const gems = Array.from(side.querySelectorAll('[data-type="gem"]'));
+        const vals = gems.map(g=>parseInt(g.dataset.value));
+        // Annule paires opposées
+        let changed = true;
+        while(changed){
+          changed = false;
+          outer: for(let i=0;i<vals.length;i++){
+            for(let j=i+1;j<vals.length;j++){
+              if(vals[i]+vals[j]===0){
+                gems[i].classList.add('canceling'); gems[j].classList.add('canceling');
+                setTimeout(()=>{ gems[i]?.remove(); gems[j]?.remove(); }, 320);
+                vals.splice(j,1); vals.splice(i,1); gems.splice(j,1); gems.splice(i,1);
+                changed = true; break outer;
+              }
+            }
+          }
+        }
+        // Combine le reste
+        const sum = vals.reduce((s,v)=>s+v,0);
+        gems.forEach(g=>g.remove());
+        if(sum!==0) createItem('gem', sum, side);
+      });
+      updateEquationText();
+      addDnDListeners();
+      updateDivideButton();
+    }
+
+    function simplifyXsAcross(){
+      // Annule des paires x gauche/droite
+      const lx = leftSide.querySelectorAll('[data-type="x"]').length;
+      const rx = rightSide.querySelectorAll('[data-type="x"]').length;
+      const pairs = Math.min(lx, rx);
+      if(pairs>0){
+        const lxs = Array.from(leftSide.querySelectorAll('[data-type="x"]')).slice(0,pairs);
+        const rxs = Array.from(rightSide.querySelectorAll('[data-type="x"]')).slice(0,pairs);
+        lxs.forEach(x=>{ x.classList.add('canceling'); setTimeout(()=>x.remove(), 280); });
+        rxs.forEach(x=>{ x.classList.add('canceling'); setTimeout(()=>x.remove(), 280); });
+      }
+      setTimeout(()=>{ updateEquationText(); addDnDListeners(); updateDivideButton(); checkWin(); }, 300);
+    }
+
+    // ====== Division (niveau 5 et cas généraux) ======
+    function updateDivideButton(){
+      const L = readSide(leftSide); const R = readSide(rightSide);
+      // On ne propose de diviser que s'il y a des x d'un seul côté et aucun de l'autre
+      let k=0, v=0, xSide=null, gSide=null;
+      if(L.x>0 && R.x===0){ k=L.x; v=R.g; xSide='L'; gSide='R'; }
+      else if(R.x>0 && L.x===0){ k=R.x; v=L.g; xSide='R'; gSide='L'; }
+      divideBtn.disabled = !(k>1 && Number.isInteger(v) && v%k===0);
+      divideBySpan.textContent = k>1? k : 1;
+      divideBtn.dataset.k = k;
+      divideBtn.dataset.xSide = xSide||'';
+      divideBtn.dataset.gSide = gSide||'';
+    }
+
+    divideBtn.addEventListener('click', ()=>{
+      const k = parseInt(divideBtn.dataset.k||'0'); if(!(k>1)) return;
+      const xSide = divideBtn.dataset.xSide; const gSide = divideBtn.dataset.gSide;
+      const sideX = xSide==='L'? leftSide : rightSide;
+      const sideG = gSide==='L'? leftSide : rightSide;
+      const gem = sideG.querySelector('[data-type="gem"]');
+      const v = parseInt(gem?.dataset.value||'0');
+      if(v%k!==0) return; // sécurité
+      // Remplace kx par x
+      const xs = sideX.querySelectorAll('[data-type="x"]');
+      xs.forEach((el,i)=>{ if(i<k-1) el.remove(); }); // garder 1 x
+      // Divise le gem
+      gem.remove(); createItem('gem', v/k, sideG);
+      AudioFX.pop();
+      updateEquationText(); updateDivideButton(); checkWin();
+    });
+
+    // ====== Vérification de réussite ======
+    function checkWin(){
+      const L = readSide(leftSide); const R = readSide(rightSide);
+      const solved = (L.x===1 && L.g===0 && R.x===0 && R.g!==0) || (R.x===1 && R.g===0 && L.x===0 && L.g!==0);
+      if(solved){
+        const value = (L.x===1)? R.g : L.g;
+        if(value === state.xSolution){ onSuccess(value); }
+      }
+    }
+
+    function onSuccess(value){
+      solutionText.textContent = `x = ${value}`;
+      successModal.classList.remove('hidden');
+      state.score += 10 + state.level; state.solvedCount += 1;
+      scoreEl.textContent = state.score;
+      progressEl.style.width = `${Math.min(100, (state.solvedCount%5)*20)}%`;
+      AudioFX.success();
+    }
+
+    // ====== Contrôles ======
+    newEqBtn.addEventListener('click', ()=>{ hideModal(); generate(); });
+    resetBtn.addEventListener('click', ()=>{ Object.assign(state, {...state, ...state.original}); render(); });
+    levelSelect.addEventListener('change', e=>{ state.level = parseInt(e.target.value,10); hideModal(); generate(state.level); });
+
+    hintBtn.addEventListener('click', ()=>{
+      const L = readSide(leftSide); const R = readSide(rightSide);
+      let hint = '';
+      if(L.x>0 && R.x>0) hint = 'Astuce : fais passer un x de l’un des côtés pour annuler des x gauche/droite.';
+      else if(L.g!==0 || R.g!==0) hint = 'Astuce : déplace la gemme vers l’autre côté pour l’addition opposée (− devient +, et inversement).';
+      else hint = 'Si tu as k·x = n, utilise le bouton « Diviser par k ». Voilà !';
+      AudioFX.hint();
+      equationDisplay.classList.add('pulse');
+      setTimeout(()=> equationDisplay.classList.remove('pulse'), 800);
+      toast(hint);
+    });
+
+    function hideModal(){ successModal.classList.add('hidden'); }
+    nextLevelBtn.addEventListener('click', ()=>{
+      hideModal();
+      state.level = Math.min(5, state.level+1);
+      levelSelect.value = String(state.level);
+      generate(state.level);
+    });
+    replayBtn.addEventListener('click', ()=>{ hideModal(); generate(state.level); });
+
+    // ====== Petit toast maison ======
+    function toast(text){
+      const t = document.createElement('div');
+      t.textContent = text;
+      t.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 bg-amber-900 text-amber-50 px-4 py-2 rounded-full shadow-lg text-sm';
+      document.body.appendChild(t);
+      setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .5s'; }, 1700);
+      setTimeout(()=> t.remove(), 2300);
+    }
+
+    // ====== Initialisation ======
+    generate(1);
+  </script>
+</body>
+</html>
