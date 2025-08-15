@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF--8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Équilibra‑Maths ⚖️ — Niveaux & Amusement</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -246,42 +246,20 @@
             createItem('gem', -v, side); // ajouter l'opposé sur la nouvelle rive
             from.removeChild(dragged);
             AudioFX.pop();
+          } else if (type === 'x') {
+            // Déplacer la boîte x vers l'autre côté
+            createItem('x', 1, side);
+            from.removeChild(dragged);
+            AudioFX.pop();
           }
           
-          // ------ LA CORRECTION EST ICI ------
-          // Le bloc "if (type === 'x')" a été supprimé.
-          // L'ancien code déplaçait la boîte 'x', ce qui était mathématiquement incorrect.
-          // Maintenant, le simple fait de glisser/déposer un 'x' sur l'autre côté va
-          // simplement déclencher les fonctions de simplification ci-dessous,
-          // notamment simplifyXsAcross() qui effectue l'opération correcte
-          // (supprimer un 'x' de chaque côté).
-
           dragged.style.opacity='1'; dragged=null;
-          setTimeout(()=>{ simplifyGems(); simplifyXsAcross(); }, 80);
+          setTimeout(()=>{ simplifyXsAcross(); }, 80);
         });
       });
     }
 
     // ====== Simplifications ======
-    function simplifyGems(){
-      [leftSide, rightSide].forEach(side => {
-        const gems = Array.from(side.querySelectorAll('[data-type="gem"]'));
-        if (gems.length < 2) return; // Inutile de simplifier s'il y a 0 ou 1 gemme
-
-        const sum = gems.reduce((s, g) => s + parseInt(g.dataset.value), 0);
-        
-        gems.forEach(g => g.classList.add('canceling'));
-        setTimeout(() => {
-            gems.forEach(g => g.remove());
-            if(sum !== 0) createItem('gem', sum, side);
-            updateEquationText();
-            addDnDListeners();
-            updateDivideButton();
-            checkWin();
-        }, 320);
-      });
-    }
-
     function simplifyXsAcross(){
       // Annule des paires x gauche/droite
       const lxs = Array.from(leftSide.querySelectorAll('[data-type="x"]'));
