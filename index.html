@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF--8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Équilibra‑Maths ⚖️ — Niveaux & Amusement</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -57,15 +57,12 @@
       </div>
     </header>
 
-    <!-- Barre de progression simple -->
     <div class="w-full bg-amber-200/60 rounded-xl h-3 overflow-hidden mb-4">
       <div id="progress" class="h-full bg-amber-500 rounded-xl" style="width: 0%"></div>
     </div>
 
-    <!-- Équation textuelle -->
     <div id="equation-display" class="text-3xl font-bold my-4 p-4 bg-white/70 rounded-xl shadow-inner text-center"></div>
 
-    <!-- Balance visuelle -->
     <div class="flex justify-center items-end relative mb-4 gap-3">
       <div id="left-side" class="equation-side" data-side="left" aria-label="côté gauche"></div>
       <div class="balance-beam absolute bottom-0 left-1/2 -translate-x-1/2"></div>
@@ -73,7 +70,6 @@
       <div id="right-side" class="equation-side" data-side="right" aria-label="côté droit"></div>
     </div>
 
-    <!-- Contrôles -->
     <div class="mt-6 flex flex-wrap justify-center items-center gap-3">
       <button id="new-equation-btn" class="px-5 py-2.5 bg-amber-500 text-white font-bold rounded-lg shadow-lg hover:bg-amber-600 transition-transform hover:scale-[1.03]">Nouvelle équation</button>
       <button id="reset-btn" class="px-4 py-2 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition">Réinitialiser</button>
@@ -81,11 +77,9 @@
       <button id="divide-btn" disabled class="px-4 py-2 bg-emerald-500 disabled:opacity-40 text-white font-bold rounded-lg shadow hover:bg-emerald-600 transition">Diviser par <span id="divide-by">1</span></button>
     </div>
 
-    <!-- Légende rapide -->
     <div class="mt-4 text-center text-sm text-amber-700">Astuce : déplace une gemme vers l'autre côté pour soustraire/ajouter la même valeur aux deux côtés. Les <span class="font-semibold">x</span> s'annulent par paires gauche/droite.</div>
   </div>
 
-  <!-- Modale de succès -->
   <div id="success-modal" class="feedback-modal hidden fixed inset-0 bg-black/50 flex justify-center items-center p-4">
     <div class="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all max-w-sm w-full">
       <div class="text-6xl mb-2">🎉</div>
@@ -214,10 +208,11 @@
       const l = readSide(leftSide); const r = readSide(rightSide);
       const fmt = (x,g) => {
         const parts = [];
-        if(x!==0) parts.push(`${x}x`);
+        if(x!==0) parts.push(x === 1 ? 'x' : `${x}x`);
         if(g>0) parts.push(`+ ${g}`);
         if(g<0) parts.push(`- ${Math.abs(g)}`);
-        return parts.length? parts.join(' ') : '0';
+        if(x===0 && g===0) return '0';
+        return parts.join(' ');
       };
       equationDisplay.textContent = `${fmt(l.x, l.g)} = ${fmt(r.x, r.g)}`;
     }
@@ -235,6 +230,7 @@
       const items = document.querySelectorAll('[draggable="true"]');
       items.forEach(item => {
         item.addEventListener('dragstart', e=>{ dragged = e.target; setTimeout(()=> dragged.style.opacity='.5',0); });
+        item.addEventListener('dragend', e => { if(dragged) dragged.style.opacity='1'; dragged = null; });
       });
       [leftSide,rightSide].forEach(side=>{
         side.addEventListener('dragover', e=>{ e.preventDefault(); side.classList.add('drag-over'); });
@@ -244,18 +240,22 @@
           if(!dragged) return;
           const from = dragged.parentElement; if(from === side) { dragged.style.opacity='1'; dragged=null; return; }
           const type = dragged.dataset.type;
+          
           if(type==='gem'){
             const v = parseInt(dragged.dataset.value);
             createItem('gem', -v, side); // ajouter l'opposé sur la nouvelle rive
             from.removeChild(dragged);
             AudioFX.pop();
           }
-          if(type==='x'){
-            // déplacer un x de l'autre côté => permettra l'annulation croisée
-            createItem('x', 1, side);
-            from.removeChild(dragged);
-            AudioFX.pop();
-          }
+          
+          // ------ LA CORRECTION EST ICI ------
+          // Le bloc "if (type === 'x')" a été supprimé.
+          // L'ancien code déplaçait la boîte 'x', ce qui était mathématiquement incorrect.
+          // Maintenant, le simple fait de glisser/déposer un 'x' sur l'autre côté va
+          // simplement déclencher les fonctions de simplification ci-dessous,
+          // notamment simplifyXsAcross() qui effectue l'opération correcte
+          // (supprimer un 'x' de chaque côté).
+
           dragged.style.opacity='1'; dragged=null;
           setTimeout(()=>{ simplifyGems(); simplifyXsAcross(); }, 80);
         });
@@ -266,44 +266,33 @@
     function simplifyGems(){
       [leftSide, rightSide].forEach(side => {
         const gems = Array.from(side.querySelectorAll('[data-type="gem"]'));
-        const vals = gems.map(g=>parseInt(g.dataset.value));
-        // Annule paires opposées
-        let changed = true;
-        while(changed){
-          changed = false;
-          outer: for(let i=0;i<vals.length;i++){
-            for(let j=i+1;j<vals.length;j++){
-              if(vals[i]+vals[j]===0){
-                gems[i].classList.add('canceling'); gems[j].classList.add('canceling');
-                setTimeout(()=>{ gems[i]?.remove(); gems[j]?.remove(); }, 320);
-                vals.splice(j,1); vals.splice(i,1); gems.splice(j,1); gems.splice(i,1);
-                changed = true; break outer;
-              }
-            }
-          }
-        }
-        // Combine le reste
-        const sum = vals.reduce((s,v)=>s+v,0);
-        gems.forEach(g=>g.remove());
-        if(sum!==0) createItem('gem', sum, side);
+        if (gems.length < 2) return; // Inutile de simplifier s'il y a 0 ou 1 gemme
+
+        const sum = gems.reduce((s, g) => s + parseInt(g.dataset.value), 0);
+        
+        gems.forEach(g => g.classList.add('canceling'));
+        setTimeout(() => {
+            gems.forEach(g => g.remove());
+            if(sum !== 0) createItem('gem', sum, side);
+            updateEquationText();
+            addDnDListeners();
+            updateDivideButton();
+            checkWin();
+        }, 320);
       });
-      updateEquationText();
-      addDnDListeners();
-      updateDivideButton();
     }
 
     function simplifyXsAcross(){
       // Annule des paires x gauche/droite
-      const lx = leftSide.querySelectorAll('[data-type="x"]').length;
-      const rx = rightSide.querySelectorAll('[data-type="x"]').length;
-      const pairs = Math.min(lx, rx);
+      const lxs = Array.from(leftSide.querySelectorAll('[data-type="x"]'));
+      const rxs = Array.from(rightSide.querySelectorAll('[data-type="x"]'));
+      const pairs = Math.min(lxs.length, rxs.length);
+      
       if(pairs>0){
-        const lxs = Array.from(leftSide.querySelectorAll('[data-type="x"]')).slice(0,pairs);
-        const rxs = Array.from(rightSide.querySelectorAll('[data-type="x"]')).slice(0,pairs);
-        lxs.forEach(x=>{ x.classList.add('canceling'); setTimeout(()=>x.remove(), 280); });
-        rxs.forEach(x=>{ x.classList.add('canceling'); setTimeout(()=>x.remove(), 280); });
+        lxs.slice(0,pairs).forEach(x=>{ x.classList.add('canceling'); setTimeout(()=>x.remove(), 300); });
+        rxs.slice(0,pairs).forEach(x=>{ x.classList.add('canceling'); setTimeout(()=>x.remove(), 300); });
       }
-      setTimeout(()=>{ updateEquationText(); addDnDListeners(); updateDivideButton(); checkWin(); }, 300);
+      setTimeout(()=>{ updateEquationText(); addDnDListeners(); updateDivideButton(); checkWin(); }, 320);
     }
 
     // ====== Division (niveau 5 et cas généraux) ======
@@ -311,9 +300,10 @@
       const L = readSide(leftSide); const R = readSide(rightSide);
       // On ne propose de diviser que s'il y a des x d'un seul côté et aucun de l'autre
       let k=0, v=0, xSide=null, gSide=null;
-      if(L.x>0 && R.x===0){ k=L.x; v=R.g; xSide='L'; gSide='R'; }
-      else if(R.x>0 && L.x===0){ k=R.x; v=L.g; xSide='R'; gSide='L'; }
-      divideBtn.disabled = !(k>1 && Number.isInteger(v) && v%k===0);
+      if(L.x>0 && R.x===0 && L.g===0){ k=L.x; v=R.g; xSide='L'; gSide='R'; }
+      else if(R.x>0 && L.x===0 && R.g===0){ k=R.x; v=L.g; xSide='R'; gSide='L'; }
+      
+      divideBtn.disabled = !(k>1 && Number.isInteger(v) && v % k === 0);
       divideBySpan.textContent = k>1? k : 1;
       divideBtn.dataset.k = k;
       divideBtn.dataset.xSide = xSide||'';
@@ -327,12 +317,14 @@
       const sideG = gSide==='L'? leftSide : rightSide;
       const gem = sideG.querySelector('[data-type="gem"]');
       const v = parseInt(gem?.dataset.value||'0');
+      
       if(v%k!==0) return; // sécurité
       // Remplace kx par x
       const xs = sideX.querySelectorAll('[data-type="x"]');
       xs.forEach((el,i)=>{ if(i<k-1) el.remove(); }); // garder 1 x
       // Divise le gem
-      gem.remove(); createItem('gem', v/k, sideG);
+      if(gem) gem.remove(); 
+      createItem('gem', v/k, sideG);
       AudioFX.pop();
       updateEquationText(); updateDivideButton(); checkWin();
     });
@@ -340,7 +332,7 @@
     // ====== Vérification de réussite ======
     function checkWin(){
       const L = readSide(leftSide); const R = readSide(rightSide);
-      const solved = (L.x===1 && L.g===0 && R.x===0 && R.g!==0) || (R.x===1 && R.g===0 && L.x===0 && L.g!==0);
+      const solved = (L.x===1 && L.g===0 && R.x===0) || (R.x===1 && R.g===0 && L.x===0);
       if(solved){
         const value = (L.x===1)? R.g : L.g;
         if(value === state.xSolution){ onSuccess(value); }
@@ -365,8 +357,10 @@
       const L = readSide(leftSide); const R = readSide(rightSide);
       let hint = '';
       if(L.x>0 && R.x>0) hint = 'Astuce : fais passer un x de l’un des côtés pour annuler des x gauche/droite.';
-      else if(L.g!==0 || R.g!==0) hint = 'Astuce : déplace la gemme vers l’autre côté pour l’addition opposée (− devient +, et inversement).';
-      else hint = 'Si tu as k·x = n, utilise le bouton « Diviser par k ». Voilà !';
+      else if((L.x>0 && L.g!==0) || (R.x>0 && R.g!==0)) hint = 'Astuce : déplace la gemme vers l’autre côté pour l’isoler des x.';
+      else if(divideBtn.disabled === false) hint = 'Il ne reste plus qu\'à diviser ! Utilise le bouton vert.';
+      else hint = 'Bravo, tu as trouvé la solution !';
+      
       AudioFX.hint();
       equationDisplay.classList.add('pulse');
       setTimeout(()=> equationDisplay.classList.remove('pulse'), 800);
@@ -386,10 +380,10 @@
     function toast(text){
       const t = document.createElement('div');
       t.textContent = text;
-      t.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 bg-amber-900 text-amber-50 px-4 py-2 rounded-full shadow-lg text-sm';
+      t.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 bg-amber-900 text-amber-50 px-4 py-2 rounded-full shadow-lg text-sm transition-opacity duration-300';
       document.body.appendChild(t);
-      setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .5s'; }, 1700);
-      setTimeout(()=> t.remove(), 2300);
+      setTimeout(()=>{ t.style.opacity='0'; }, 2000);
+      setTimeout(()=> t.remove(), 2500);
     }
 
     // ====== Initialisation ======
