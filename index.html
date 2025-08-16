@@ -1,317 +1,434 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>تعلم حل المعادلات - لعبة دراجون بوكس</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f0f8ff;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-      direction: rtl;
-    }
-    h1 {
-      color: #2c3e50;
-    }
-    .game-container {
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .level {
-      font-size: 1.2em;
-      color: #e67e22;
-      margin-bottom: 10px;
-    }
-    .equation {
-      font-size: 2em;
-      margin: 20px 0;
-      padding: 15px;
-      background: #e8f4fc;
-      border-radius: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-    }
-    .side {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .token {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .token:hover {
-      transform: scale(1.1);
-    }
-    .btn {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 1em;
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: #2980b9;
-    }
-    .feedback {
-      margin: 15px 0;
-      font-weight: bold;
-      min-height: 24px;
-    }
-    .hidden {
-      display: none;
-    }
-    .win-screen {
-      font-size: 1.5em;
-      color: #27ae60;
-    }
-    .hint {
-      color: #7f8c8d;
-      font-size: 0.9em;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Jeu des Équations V2</title>
+    <style>
+        :root {
+            --bg-color: #f0f8ff;
+            --main-color: #ff6347;
+            --box-color: #ffd700;
+            --number-color: #87ceeb;
+            --font: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+            overflow: hidden;
+        }
+
+        #game-container {
+            text-align: center;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: var(--main-color);
+            animation: fadeInDown 0.5s ease-out;
+        }
+
+        #level-display {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        #equation-zone {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        #equation-container {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border: 3px dashed #add8e6;
+            border-radius: 15px;
+        }
+
+        .side {
+            display: flex;
+            align-items: center;
+            min-width: 180px;
+            min-height: 70px;
+            padding: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .equals {
+            font-size: 4em;
+            margin: 0 25px;
+            color: var(--main-color);
+            font-weight: bold;
+        }
+
+        .element {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            border-radius: 15px;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: popIn 0.4s ease-out;
+        }
+
+        .variable {
+            background-color: var(--box-color);
+            color: #a67c00;
+        }
+
+        .number {
+            background-color: var(--number-color);
+            cursor: grab;
+        }
+        
+        .number.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        #drop-zone {
+            width: 100px;
+            height: 100px;
+            border: 3px dotted var(--main-color);
+            border-radius: 50%;
+            margin-left: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            color: var(--main-color);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        
+        #drop-zone.over {
+            background-color: #ffddd7;
+            transform: scale(1.1);
+        }
+
+        #feedback {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            min-height: 30px;
+            color: var(--main-color);
+        }
+        
+        .feedback-correct {
+            animation: tada 0.8s;
+        }
+        
+        .feedback-incorrect {
+            animation: shake 0.5s;
+        }
+
+        button {
+            background-color: var(--main-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-family: var(--font);
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #e5533d;
+        }
+        
+        /* Animations */
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+        
+        @keyframes fadeInDown {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        @keyframes tada {
+            0% {transform: scale(1);}
+            10%, 20% {transform: scale(0.9) rotate(-3deg);}
+            30%, 50%, 70%, 90% {transform: scale(1.1) rotate(3deg);}
+            40%, 60%, 80% {transform: scale(1.1) rotate(-3deg);}
+            100% {transform: scale(1) rotate(0);}
+        }
+    </style>
 </head>
 <body>
-  <div class="game-container">
-    <h1>🐉 لعبة تعلم المعادلات</h1>
-    <p>اهدف إلى جعل الطرفين متساويين مع ترك <strong>x</strong> وحدها!</p>
 
-    <div class="level">المستوى: <span id="level">1</span></div>
-    <div class="equation">
-      <div class="side" id="left"></div>
-      <span>=</span>
-      <div class="side" id="right"></div>
+<div id="game-container">
+    <h1>Le Jeu des Équations V2</h1>
+    <div id="level-display">Niveau 1</div>
+    <div id="equation-zone">
+        <div id="equation-container">
+            <div id="left-side" class="side"></div>
+            <div class="equals">=</div>
+            <div id="right-side" class="side"></div>
+        </div>
+        <div id="drop-zone">-</div>
     </div>
+    <div id="feedback">Isole la boîte jaune (x) !</div>
+    <button id="next-button" style="display: none;">Niveau Suivant</button>
+</div>
 
-    <div class="feedback" id="feedback"></div>
-    <button class="btn" id="next-btn" onclick="nextLevel()">المستوى التالي</button>
-    <button class="btn" id="reset-btn" onclick="resetLevel()">إعادة المحاولة</button>
+<script>
+    // Éléments du DOM
+    const leftSide = document.getElementById('left-side');
+    const rightSide = document.getElementById('right-side');
+    const feedbackDiv = document.getElementById('feedback');
+    const nextButton = document.getElementById('next-button');
+    const dropZone = document.getElementById('drop-zone');
+    const levelDisplay = document.getElementById('level-display');
 
-    <div class="hint" id="hint"></div>
-  </div>
+    // Contexte Audio pour les sons
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-  <script>
-    let currentLevel = 1;
-    const totalLevels = 8;
-    const levels = [
-      // المستوى 1: صور (كرات زرقاء وحمراء تلغي بعضها)
-      { left: ['blue', 'red'], right: ['red'], solution: 'blue', type: 'visual' },
-      // المستوى 2: صور + رمز x
-      { left: ['x', 'blue'], right: ['green', 'green', 'green'], solution: ['green','green'], type: 'visual' },
-      // المستوى 3: أرقام بسيطة
-      { left: ['x', 3], right: [7], solution: 4, type: 'number' },
-      // المستوى 4: x - a = b
-      { left: ['x', -2], right: [5], solution: 7, type: 'number' },
-      // المستوى 5: a + x = b
-      { left: [4, 'x'], right: [9], solution: 5, type: 'number' },
-      // المستوى 6: a - x = b
-      { left: [8, '-x'], right: [3], solution: 5, type: 'number' },
-      // المستوى 7: خليط
-      { left: ['x', -5], right: [2], solution: 7, type: 'number' },
-      // المستوى 8: تقييم نهائي
-      { left: [6, 'x'], right: [13], solution: 7, type: 'number' }
-    ];
+    // État du jeu
+    let currentEquation = {};
+    let level = 1;
+    let draggedElement = null;
 
-    const colorMap = {
-      blue: '#3498db',
-      red: '#e74c3c',
-      green: '#2ecc71',
-      yellow: '#f1c40f'
-    };
+    // --- Fonctions Audio ---
+    function playSound(type) {
+        if (!audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
-    const symbolMap = {
-      'x': '🦄',
-      '-x': '🐉',
-      blue: '🔵',
-      red: '🔴',
-      green: '🟢',
-      yellow: '🟡'
-    };
-
-    const nextBtn = document.getElementById('next-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const feedbackEl = document.getElementById('feedback');
-    const hintEl = document.getElementById('hint');
-
-    function initGame() {
-      const levelData = levels[currentLevel - 1];
-      document.getElementById('level').textContent = currentLevel;
-      renderEquation(levelData);
-      nextBtn.classList.add('hidden');
-      feedbackEl.textContent = '';
-      hintEl.textContent = getHint(levelData);
+        if (type === 'correct') {
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+        } else if (type === 'incorrect') {
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+        } else if (type === 'win') {
+            // Un petit arpège
+            const freqs = [523.25, 659.25, 783.99];
+            freqs.forEach((freq, i) => {
+                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
+            });
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+        }
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
     }
 
-    function renderEquation(levelData) {
-      const leftEl = document.getElementById('left');
-      const rightEl = document.getElementById('right');
-      leftEl.innerHTML = '';
-      rightEl.innerHTML = '';
+    // --- Logique du Jeu ---
 
-      levelData.left.forEach(item => {
-        const token = document.createElement('div');
-        token.className = 'token';
-        if (levelData.type === 'visual' && typeof item === 'string' && item !== 'x' && item !== '-x') {
-          token.style.backgroundColor = colorMap[item];
-        } else if (levelData.type === 'visual') {
-          token.textContent = symbolMap[item] || item;
+    function generateEquation() {
+        let a, b, c, x;
+        if (level < 3) { // Niveaux 1-2: x + b = c
+            a = 1;
+            b = Math.floor(Math.random() * 5) + 1;
+            x = Math.floor(Math.random() * 5) + 1;
+            c = x + b;
+        } else { // Niveaux 3+: ax + b = c
+            a = Math.floor(Math.random() * 3) + 2; // a entre 2 et 4
+            b = Math.floor(Math.random() * 10) + 1;
+            x = Math.floor(Math.random() * 4) + 1;
+            c = a * x + b;
+        }
+        return { a, b, c, x };
+    }
+
+    function displayEquation(eq) {
+        leftSide.innerHTML = '';
+        rightSide.innerHTML = '';
+
+        // Côté gauche
+        for (let i = 0; i < eq.a; i++) {
+            createAndAppendElement('x', 'variable', leftSide);
+        }
+        createAndAppendElement(eq.b, 'number', leftSide, true);
+
+        // Côté droit
+        createAndAppendElement(eq.c, 'number', rightSide, false);
+    }
+
+    function createAndAppendElement(value, type, parent, draggable = false) {
+        const el = document.createElement('div');
+        el.className = `element ${type}`;
+        el.textContent = value;
+        el.dataset.value = value;
+        
+        if (draggable) {
+            el.draggable = true;
+            el.id = `draggable-number-${value}`;
+            el.addEventListener('dragstart', handleDragStart);
+            el.addEventListener('dragend', handleDragEnd);
+        }
+        parent.appendChild(el);
+    }
+
+    function updateFeedback(message, isCorrect) {
+        feedbackDiv.textContent = message;
+        feedbackDiv.className = isCorrect ? 'feedback-correct' : 'feedback-incorrect';
+        if (isCorrect === false) playSound('incorrect');
+    }
+
+    // --- Gestion du Glisser-Déposer ---
+    
+    function handleDragStart(e) {
+        draggedElement = e.target;
+        setTimeout(() => e.target.classList.add('dragging'), 0);
+    }
+
+    function handleDragEnd(e) {
+        e.target.classList.remove('dragging');
+    }
+
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('over');
+    });
+
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('over');
+        if (draggedElement && parseInt(draggedElement.dataset.value) === currentEquation.b) {
+            handleCorrectDrop();
         } else {
-          token.textContent = item;
+            updateFeedback("Oups ! Ce n'est pas le bon nombre à déplacer.", false);
         }
-        token.onclick = () => handleTokenClick(item, levelData);
-        leftEl.appendChild(token);
-      });
+    });
+    
+    function handleCorrectDrop() {
+        playSound('correct');
+        updateFeedback("Parfait ! On fait la même chose de l'autre côté.", true);
 
-      levelData.right.forEach(item => {
-        const token = document.createElement('div');
-        token.className = 'token';
-        if (levelData.type === 'visual' && typeof item === 'string' && item !== 'x' && item !== '-x') {
-          token.style.backgroundColor = colorMap[item];
-        } else if (levelData.type === 'visual') {
-          token.textContent = symbolMap[item] || item;
+        // Animer et retirer l'élément glissé
+        draggedElement.style.animation = 'fadeOut 0.5s forwards';
+        setTimeout(() => leftSide.removeChild(draggedElement), 500);
+
+        // Mettre à jour la valeur à droite
+        setTimeout(() => {
+            const rightNumber = rightSide.querySelector('.number');
+            const newValue = currentEquation.c - currentEquation.b;
+            
+            rightNumber.style.animation = 'popIn 0.5s';
+            rightNumber.textContent = newValue;
+            rightNumber.dataset.value = newValue;
+
+            checkCompletion();
+        }, 600);
+    }
+    
+    function checkCompletion() {
+        const { a, x } = currentEquation;
+        
+        if (a === 1) {
+            // Le jeu est terminé pour ce niveau
+            setTimeout(finishLevel, 1000);
         } else {
-          token.textContent = item;
+            // Étape de division
+            feedbackDiv.textContent = `Maintenant, on divise par ${a}.`;
+            setTimeout(() => {
+                const rightNumber = rightSide.querySelector('.number');
+                rightNumber.textContent = x;
+                rightNumber.dataset.value = x;
+                
+                leftSide.querySelectorAll('.variable').forEach(v => {
+                    if (v.textContent === 'x') { // Keep one x
+                        v.style.animation = 'tada 0.8s';
+                    } else {
+                        v.style.animation = 'fadeOut 0.5s forwards';
+                    }
+                });
+                
+                // Remove extra 'x' elements after animation
+                 setTimeout(() => {
+                    const variables = leftSide.querySelectorAll('.variable');
+                    for(let i=1; i < variables.length; i++) {
+                       leftSide.removeChild(variables[i]);
+                    }
+                 }, 500);
+
+                finishLevel();
+            }, 1500);
         }
-        token.onclick = () => handleTokenClick(item, levelData, true);
-        rightEl.appendChild(token);
-      });
     }
 
-    function handleTokenClick(item, levelData, isRight = false) {
-      if (typeof item === 'string' && (item === 'x' || item === '-x')) {
-        feedback("لا يمكن إزالة x بهذه الطريقة. فكر كيف تجعل x وحدها!");
-        return;
-      }
+    function finishLevel() {
+        playSound('win');
+        updateFeedback(`Bravo ! x = ${currentEquation.x}`, true);
+        feedbackDiv.classList.add('feedback-correct');
+        nextButton.style.display = 'inline-block';
+    }
 
-      // نقل أو إزالة العنصر
-      if (isRight) {
-        levelData.right = levelData.right.filter(i => i !== item);
-      } else {
-        levelData.left = levelData.left.filter(i => i !== item);
-      }
+    function startNewLevel() {
+        level++;
+        startGame();
+    }
 
-      // إزالة من الطرف الآخر (للتوازن)
-      if (levelData.type === 'visual') {
-        const opposite = getOppositeColor(item);
-        const oppIndex = levelData.right.indexOf(opposite);
-        if (oppIndex !== -1) {
-          levelData.right.splice(oppIndex, 1);
-        } else {
-          // إذا لم يكن هناك مقابل، نضيفه كـ "سالب"
-          levelData.right.push(opposite);
+    function startGame() {
+        levelDisplay.textContent = `Niveau ${level}`;
+        currentEquation = generateEquation();
+        displayEquation(currentEquation);
+        feedbackDiv.textContent = 'Isole la boîte jaune (x) !';
+        feedbackDiv.className = '';
+        nextButton.style.display = 'none';
+        dropZone.style.display = 'flex'; // Afficher la drop zone
+        
+        // Cacher la drop zone si l'équation est déjà résolue (x = c)
+        if (currentEquation.b === 0) {
+           dropZone.style.display = 'none';
+           checkCompletion();
         }
-      } else {
-        // في الأرقام: نطرح نفس القيمة من الطرفين
-        const value = item === '-x' ? 0 : (typeof item === 'number' ? item : 0);
-        if (value !== 0) {
-          // نبحث عن نفس الرقم في الطرف الآخر ونحذفه
-          const idx = levelData.right.indexOf(value);
-          if (idx !== -1) {
-            levelData.right.splice(idx, 1);
-          } else {
-            levelData.right.push(-value);
-          }
-        }
-      }
-
-      renderEquation(levelData);
-      checkWin(levelData);
     }
+    
+    nextButton.addEventListener('click', startNewLevel);
 
-    function getOppositeColor(color) {
-      const opposites = { blue: 'red', red: 'blue', green: 'yellow', yellow: 'green' };
-      return opposites[color] || color;
-    }
+    // Démarrer le jeu
+    startGame();
+</script>
 
-    function checkWin(levelData) {
-      const left = levelData.left;
-      const right = levelData.right;
-
-      // التحقق من النصر
-      if (left.length === 1 && left[0] === 'x' && right.length === 1 && right[0] === levelData.solution) {
-        feedback("🎉 أحسنت! هذه هي الإجابة الصحيحة!", 'win');
-        nextBtn.classList.remove('hidden');
-      } else if (left.length === 1 && left[0] === '-x' && right.length === 1 && right[0] === -levelData.solution) {
-        feedback("🎉 ناجح! لكن تذكّر: -x = -a تعني أن x = a", 'win');
-        nextBtn.classList.remove('hidden');
-      } else if (left.length === 0 && right.length === 0) {
-        feedback("❗ أزلت كل شيء! تذكّر أن x يجب أن تبقى وحدها في اليسار.");
-      } else if (left.length === 1 && left[0] === 'x') {
-        const val = right[0];
-        if (val === levelData.solution) {
-          feedback("🎉 ناجح! x = " + val, 'win');
-          nextBtn.classList.remove('hidden');
-        } else {
-          feedback("تقريباً! x = " + val + " لكن الجواب الصحيح هو " + levelData.solution);
-        }
-      }
-    }
-
-    function feedback(msg, type = 'normal') {
-      feedbackEl.textContent = msg;
-      if (type === 'win') {
-        feedbackEl.style.color = '#27ae60';
-      } else {
-        feedbackEl.style.color = '#e74c3c';
-      }
-    }
-
-    function getHint(levelData) {
-      switch (currentLevel) {
-        case 1:
-          return "انقر على الألوان المتقابلة (الأحمر مع الأزرق) لإزالتها من الطرفين.";
-        case 2:
-          return "هدفك هو ترك الوحش (x) وحده في اليسار.";
-        case 3:
-          return "إذا كان x + 3 = 7، فكم يجب أن تكون x؟";
-        case 4:
-          return "x - 2 = 5 تعني أن x = 5 + 2.";
-        default:
-          return "احذف العدد بجانب x من الطرفين لتحصل على x = ...";
-      }
-    }
-
-    function nextLevel() {
-      if (currentLevel < totalLevels) {
-        currentLevel++;
-        initGame();
-      } else {
-        document.getElementById('left').innerHTML = "🎉";
-        document.getElementById('right').innerHTML = "👏";
-        feedback("لقد أتقنت حل المعادلات من الدرجة الأولى! أحسنت!", 'win');
-        nextBtn.disabled = true;
-        nextBtn.textContent = "اكتمل!";
-      }
-    }
-
-    function resetLevel() {
-      const levelData = JSON.parse(JSON.stringify(levels[currentLevel - 1]));
-      levels[currentLevel - 1] = levelData;
-      initGame();
-    }
-
-    // بدء اللعبة
-    initGame();
-  </script>
 </body>
 </html>
