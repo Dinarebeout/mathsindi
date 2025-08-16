@@ -3,400 +3,715 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Jeu des Équations V3 (Corrigé)</title>
+    <title>DragonMath - Résolution d'équations amusante</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --bg-color: #f0f8ff;
-            --main-color: #ff6347;
-            --box-color: #ffd700;
-            --number-color: #87ceeb;
-            --font: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
-        }
-
-        body {
-            font-family: var(--font);
-            background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
             margin: 0;
-            color: #333;
-            overflow: hidden;
-        }
-
-        #game-container {
-            text-align: center;
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
-            width: 90%;
-            max-width: 600px;
-        }
-
-        h1 {
-            color: var(--main-color);
-            animation: fadeInDown 0.5s ease-out;
-        }
-
-        #level-display {
-            font-size: 1.2em;
-            color: #555;
-            margin-bottom: 15px;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
-        #equation-zone {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-        }
-
-        #equation-container {
-            display: flex;
-            align-items: center;
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
             padding: 20px;
-            border: 3px dashed #add8e6;
-            border-radius: 15px;
         }
-
-        .side {
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
             display: flex;
             align-items: center;
-            min-width: 180px;
-            min-height: 70px;
-            padding: 10px;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+            color: #ffcc00;
+            animation: pulse 2s infinite;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-area {
+            display: flex;
+            gap: 30px;
+            min-height: 500px;
+        }
+        
+        .equation-area {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .balance-scale {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            position: relative;
+        }
+        
+        .beam {
+            width: 80%;
+            height: 8px;
+            background: linear-gradient(to right, #8B4513, #A0522D, #8B4513);
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+        
+        .pivot {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: #ffcc00;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 10px #ffcc00;
+        }
+        
+        .pans {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        
+        .pan {
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
             flex-wrap: wrap;
             justify-content: center;
-        }
-
-        .equals {
-            font-size: 4em;
-            margin: 0 25px;
-            color: var(--main-color);
-            font-weight: bold;
-        }
-
-        .element {
-            display: inline-flex;
-            justify-content: center;
             align-items: center;
+            padding: 15px;
+            gap: 10px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .pan.active {
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+        }
+        
+        .element {
             width: 60px;
             height: 60px;
-            margin: 5px;
-            border-radius: 15px;
-            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
             font-weight: bold;
-            color: white;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: popIn 0.4s ease-out;
-            border: 4px solid transparent; /* Ajout pour la sélection */
-        }
-
-        .variable {
-            background-color: var(--box-color);
-            color: #a67c00;
-        }
-
-        .number {
-            background-color: var(--number-color);
-        }
-
-        .movable { /* Nouvelle classe pour les nombres déplaçables */
-            cursor: pointer;
+            font-size: 1.4rem;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         
-        .movable.selected { /* Style pour le nombre sélectionné */
-            border-color: var(--main-color);
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(255, 99, 71, 0.5);
+        .element:hover {
+            transform: scale(1.05);
         }
         
-        .movable.dragging {
-            opacity: 0.5;
+        .element:active {
             cursor: grabbing;
         }
-
-        #drop-zone {
-            width: 100px;
-            height: 100px;
-            border: 3px dotted var(--main-color);
-            border-radius: 50%;
-            margin-left: 30px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.5em;
-            color: var(--main-color);
-            transition: background-color 0.3s, transform 0.3s;
-            cursor: pointer;
+        
+        .element.number {
+            background: linear-gradient(135deg, #3498db, #1a5f9e);
         }
         
-        #drop-zone.over {
-            background-color: #ffddd7;
+        .element.variable {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .element.operator {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            width: 50px;
+            height: 50px;
+            font-size: 1.8rem;
+        }
+        
+        .toolbox {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+        }
+        
+        .toolbox h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffcc00;
+        }
+        
+        .tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .tool {
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .tool:hover {
+            background: rgba(255, 204, 0, 0.2);
+            border-color: #ffcc00;
             transform: scale(1.1);
         }
-
-        #feedback {
-            margin-top: 20px;
-            font-size: 1.2em;
-            font-weight: bold;
-            min-height: 30px;
-            color: var(--main-color);
+        
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
         }
         
-        .feedback-correct { animation: tada 0.8s; }
-        .feedback-incorrect { animation: shake 0.5s; }
-
+        .level-title {
+            font-size: 1.4rem;
+            color: #ffcc00;
+        }
+        
+        .level-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
         button {
-            background-color: var(--main-color);
-            color: white;
+            padding: 14px 30px;
+            font-size: 1.1rem;
             border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-family: var(--font);
+            border-radius: 50px;
             cursor: pointer;
-            margin-top: 15px;
-            transition: background-color 0.2s;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ffcc00, #ff9900);
+            color: #1a2a6c;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
-
-        button:hover { background-color: #e5533d; }
         
-        /* Animations (inchangées) */
-        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-        @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0); } }
-        @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-20px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-        @keyframes tada { 0% {transform: scale(1);} 10%, 20% {transform: scale(0.9) rotate(-3deg);} 30%, 50%, 70%, 90% {transform: scale(1.1) rotate(3deg);} 40%, 60%, 80% {transform: scale(1.1) rotate(-3deg);} 100% {transform: scale(1) rotate(0);} }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button.secondary {
+            background: linear-gradient(135deg, #3498db, #1a5f9e);
+            color: white;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 25%;
+            background: linear-gradient(90deg, #ffcc00, #ff9900);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #ffcc00;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+        
+        .instructions ul {
+            padding-left: 25px;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .equation-display {
+            text-align: center;
+            font-size: 1.8rem;
+            min-height: 60px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .feedback {
+            text-align: center;
+            min-height: 40px;
+            font-size: 1.2rem;
+            margin: 15px 0;
+            color: #ffcc00;
+        }
+        
+        .tutorial-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 20, 40, 0.95);
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 700px;
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            display: none;
+        }
+        
+        .tutorial-box h2 {
+            color: #ffcc00;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .tutorial-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+        
+        .close-tutorial {
+            display: block;
+            margin: 0 auto;
+            padding: 12px 35px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 90;
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+        
+        .celebrate {
+            animation: celebrate 0.5s ease 3;
+        }
+        
+        .dragon-icon {
+            position: absolute;
+            font-size: 2rem;
+            color: #ff9900;
+            animation: float 3s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .dragon1 { top: 10%; left: 5%; animation-delay: 0s; }
+        .dragon2 { top: 20%; right: 5%; animation-delay: 0.5s; }
+        .dragon3 { bottom: 15%; left: 15%; animation-delay: 1s; }
+        
+        @media (max-width: 900px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            .toolbox {
+                width: 100%;
+            }
+            
+            .dragon-icon {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
-
-<div id="game-container">
-    <h1>Le Jeu des Équations V3</h1>
-    <div id="level-display">Niveau 1</div>
-    <div id="equation-zone">
-        <div id="equation-container">
-            <div id="left-side" class="side"></div>
-            <div class="equals">=</div>
-            <div id="right-side" class="side"></div>
+    <div class="dragon-icon dragon1"><i class="fas fa-dragon"></i></div>
+    <div class="dragon-icon dragon2"><i class="fas fa-dragon"></i></div>
+    <div class="dragon-icon dragon3"><i class="fas fa-dragon"></i></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-dragon"></i>
+                <h1>DragonMath</h1>
+                <i class="fas fa-dragon"></i>
+            </div>
+            <p class="subtitle">Apprends à résoudre des équations du premier degré de façon amusante et visuelle !</p>
+        </header>
+        
+        <div class="game-container">
+            <div class="level-info">
+                <div>
+                    <div class="level-title">Niveau 1 : Équations simples</div>
+                    <div class="level-description">x + a = b → x = b - a</div>
+                </div>
+                <div class="controls">
+                    <button id="reset-btn"><i class="fas fa-redo"></i> Recommencer</button>
+                    <button id="hint-btn"><i class="fas fa-lightbulb"></i> Aide</button>
+                </div>
+            </div>
+            
+            <div class="game-area">
+                <div class="equation-area">
+                    <div class="equation-display" id="equation-display">x + 3 = 8</div>
+                    <div class="feedback" id="feedback">Déplace les éléments pour isoler x !</div>
+                    
+                    <div class="balance-scale">
+                        <div class="beam">
+                            <div class="pivot"></div>
+                        </div>
+                        <div class="pans">
+                            <div class="pan" id="left-pan">
+                                <div class="element variable" draggable="true">x</div>
+                                <div class="element operator" draggable="true">+</div>
+                                <div class="element number" draggable="true">3</div>
+                            </div>
+                            <div class="pan" id="right-pan">
+                                <div class="element number" draggable="true">8</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="toolbox">
+                    <h3>Opérations</h3>
+                    <div class="tools">
+                        <div class="tool" id="add"><i class="fas fa-plus"></i></div>
+                        <div class="tool" id="subtract"><i class="fas fa-minus"></i></div>
+                        <div class="tool" id="multiply"><i class="fas fa-times"></i></div>
+                        <div class="tool" id="divide"><i class="fas fa-divide"></i></div>
+                        <div class="tool" id="invert"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="tool" id="simplify"><i class="fas fa-calculator"></i></div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span>Progression</span>
+                            <span>25%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls" style="margin-top: 25px;">
+                        <button class="secondary" id="prev-level"><i class="fas fa-arrow-left"></i> Précédent</button>
+                        <button class="secondary" id="next-level">Suivant <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3><i class="fas fa-info-circle"></i> Comment jouer ?</h3>
+                <ul>
+                    <li>Déplace les éléments entre les plateaux pour modifier l'équation</li>
+                    <li>Utilise les opérations mathématiques pour simplifier l'équation</li>
+                    <li>L'objectif est d'isoler <strong>x</strong> d'un côté du plateau</li>
+                    <li>Rappelle-toi : toute opération faite d'un côté doit être faite de l'autre !</li>
+                </ul>
+            </div>
         </div>
-        <div id="drop-zone">-</div>
     </div>
-    <div id="feedback">Isole la boîte jaune (x) !</div>
-    <button id="next-button" style="display: none;">Niveau Suivant</button>
-</div>
-
-<script>
-    // Éléments du DOM
-    const leftSide = document.getElementById('left-side');
-    const rightSide = document.getElementById('right-side');
-    const feedbackDiv = document.getElementById('feedback');
-    const nextButton = document.getElementById('next-button');
-    const dropZone = document.getElementById('drop-zone');
-    const levelDisplay = document.getElementById('level-display');
-
-    // Contexte Audio
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    // État du jeu
-    let currentEquation = {};
-    let level = 1;
-    let activeElement = null; // Remplacera draggedElement et selectedElement
-
-    // --- Fonctions Audio (inchangées) ---
-    function playSound(type) {
-        if (!audioContext) return;
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        if (type === 'correct') {
-            oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
-        } else if (type === 'incorrect') {
-            oscillator.type = 'square'; oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-        } else if (type === 'win') {
-            const freqs = [523.25, 659.25, 783.99];
-            freqs.forEach((freq, i) => { oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15); });
-            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
-        }
-        
-        oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.5);
-    }
-
-    // --- Logique du Jeu ---
-    function generateEquation() {
-        let a, b, c, x;
-        if (level < 3) { a = 1; b = Math.floor(Math.random() * 5) + 1; x = Math.floor(Math.random() * 5) + 1; c = x + b; } 
-        else { a = Math.floor(Math.random() * 3) + 2; b = Math.floor(Math.random() * 10) + 1; x = Math.floor(Math.random() * 4) + 1; c = a * x + b; }
-        return { a, b, c, x };
-    }
-
-    function displayEquation(eq) {
-        leftSide.innerHTML = ''; rightSide.innerHTML = '';
-        for (let i = 0; i < eq.a; i++) { createAndAppendElement('x', 'variable', leftSide); }
-        createAndAppendElement(eq.b, 'number movable', leftSide, true);
-        createAndAppendElement(eq.c, 'number', rightSide, false);
-    }
-
-    function createAndAppendElement(value, type, parent, isMovable = false) {
-        const el = document.createElement('div');
-        el.className = `element ${type}`;
-        el.textContent = value;
-        el.dataset.value = value;
-        
-        if (isMovable) {
-            el.draggable = true;
-            el.id = `movable-number-${value}`;
-            el.addEventListener('click', handleElementClick);
-            el.addEventListener('dragstart', handleDragStart);
-            el.addEventListener('dragend', handleDragEnd);
-        }
-        parent.appendChild(el);
-    }
-
-    function updateFeedback(message, isCorrect) {
-        feedbackDiv.textContent = message;
-        feedbackDiv.className = isCorrect ? 'feedback-correct' : 'feedback-incorrect';
-        if (isCorrect === false) playSound('incorrect');
-    }
-
-    // --- Gestion des Interactions (Clic + Glisser-Déposer) ---
     
-    function handleElementClick(e) {
-        const clickedElement = e.target;
-        // Désélectionner si on clique à nouveau sur le même élément
-        if (activeElement === clickedElement) {
-            activeElement.classList.remove('selected');
-            activeElement = null;
-            return;
-        }
-        // Désélectionner l'ancien élément s'il y en a un
-        if (activeElement) {
-            activeElement.classList.remove('selected');
-        }
-        // Sélectionner le nouvel élément
-        activeElement = clickedElement;
-        activeElement.classList.add('selected');
-        updateFeedback("Maintenant, clique sur la zone cible '-' pour soustraire.", true);
-    }
-
-    function handleDragStart(e) {
-        if (activeElement) activeElement.classList.remove('selected');
-        activeElement = e.target;
-        setTimeout(() => e.target.classList.add('dragging'), 0);
-    }
-
-    function handleDragEnd(e) {
-        e.target.classList.remove('dragging');
-    }
-
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
-    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('over'); });
-    dropZone.addEventListener('drop', handleTargetInteraction);
-    dropZone.addEventListener('click', handleTargetInteraction);
-
-    function handleTargetInteraction(e) {
-        e.preventDefault();
-        dropZone.classList.remove('over');
-
-        if (!activeElement) {
-            updateFeedback("Sélectionne d'abord un nombre à déplacer !", false);
-            return;
-        }
-
-        if (parseInt(activeElement.dataset.value) === currentEquation.b) {
-            handleCorrectAction(activeElement);
-        } else {
-            updateFeedback("Oups ! Ce n'est pas le bon nombre.", false);
-            if (activeElement) activeElement.classList.remove('selected');
-            activeElement = null;
-        }
-    }
+    <div class="tutorial-box" id="tutorial-box">
+        <h2><i class="fas fa-graduation-cap"></i> Concept de Base</h2>
+        <div class="tutorial-content">
+            <p>Une équation est comme une balance : les deux côtés doivent toujours être égaux !</p>
+            <p>Pour résoudre une équation du type <strong>x + 3 = 8</strong> :</p>
+            <ol>
+                <li>Enlève +3 du côté gauche en ajoutant -3 des deux côtés : x + 3 - 3 = 8 - 3</li>
+                <li>Simplifie : x = 5</li>
+            </ol>
+            <p>Dans ce jeu, tu peux :</p>
+            <ul>
+                <li>Déplacer les nombres d'un côté à l'autre (ils changent de signe)</li>
+                <li>Ajouter/soustraire le même nombre des deux côtés</li>
+                <li>Multiplier/diviser les deux côtés par le même nombre</li>
+            </ul>
+        </div>
+        <button class="close-tutorial" id="close-tutorial">Commencer à jouer !</button>
+    </div>
     
-    function handleCorrectAction(element) {
-        playSound('correct');
-        updateFeedback("Parfait ! On fait la même chose de l'autre côté.", true);
-        element.classList.remove('selected', 'dragging');
+    <div class="overlay" id="overlay"></div>
 
-        // On ne peut plus interagir avec cet élément
-        element.style.pointerEvents = 'none';
-
-        element.style.animation = 'fadeOut 0.5s forwards';
-        setTimeout(() => leftSide.removeChild(element), 500);
-
-        setTimeout(() => {
-            const rightNumber = rightSide.querySelector('.number');
-            const newValue = currentEquation.c - currentEquation.b;
-            rightNumber.style.animation = 'popIn 0.5s';
-            rightNumber.textContent = newValue;
-            rightNumber.dataset.value = newValue;
-            checkCompletion();
-        }, 600);
-        
-        activeElement = null;
-    }
-    
-    function checkCompletion() {
-        const { a, x } = currentEquation;
-        if (a === 1) {
-            setTimeout(finishLevel, 1000);
-        } else {
-            feedbackDiv.textContent = `Maintenant, on divise par ${a}.`;
-            setTimeout(() => {
-                const rightNumber = rightSide.querySelector('.number');
-                rightNumber.textContent = x;
-                rightNumber.dataset.value = x;
-                leftSide.querySelectorAll('.variable').forEach((v, index) => {
-                    if (index === 0) { v.style.animation = 'tada 0.8s'; } 
-                    else { v.style.animation = 'fadeOut 0.5s forwards'; }
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Afficher le tutoriel au démarrage
+            const tutorialBox = document.getElementById('tutorial-box');
+            const overlay = document.getElementById('overlay');
+            const closeTutorial = document.getElementById('close-tutorial');
+            
+            tutorialBox.style.display = 'block';
+            overlay.style.display = 'block';
+            
+            closeTutorial.addEventListener('click', function() {
+                tutorialBox.style.display = 'none';
+                overlay.style.display = 'none';
+            });
+            
+            // Gestion du drag and drop
+            const elements = document.querySelectorAll('.element');
+            const leftPan = document.getElementById('left-pan');
+            const rightPan = document.getElementById('right-pan');
+            const equationDisplay = document.getElementById('equation-display');
+            const feedback = document.getElementById('feedback');
+            
+            let draggedElement = null;
+            
+            elements.forEach(element => {
+                element.addEventListener('dragstart', function() {
+                    draggedElement = this;
+                    setTimeout(() => this.style.opacity = '0.4', 0);
                 });
-                setTimeout(() => {
-                    const variables = leftSide.querySelectorAll('.variable');
-                    for(let i = 1; i < variables.length; i++) { leftSide.removeChild(variables[i]); }
-                }, 500);
-                finishLevel();
-            }, 1500);
-        }
-    }
-
-    function finishLevel() {
-        playSound('win');
-        updateFeedback(`Bravo ! x = ${currentEquation.x}`, true);
-        feedbackDiv.classList.add('feedback-correct');
-        nextButton.style.display = 'inline-block';
-        dropZone.style.display = 'none';
-    }
-
-    function startNewLevel() {
-        level++;
-        startGame();
-    }
-
-    function startGame() {
-        if(activeElement) activeElement.classList.remove('selected');
-        activeElement = null;
-        levelDisplay.textContent = `Niveau ${level}`;
-        currentEquation = generateEquation();
-        displayEquation(currentEquation);
-        feedbackDiv.textContent = 'Isole la boîte jaune (x) !';
-        feedbackDiv.className = '';
-        nextButton.style.display = 'none';
-        dropZone.style.display = 'flex';
-        if (currentEquation.b === 0) {
-           dropZone.style.display = 'none';
-           checkCompletion();
-        }
-    }
-    
-    nextButton.addEventListener('click', startNewLevel);
-    startGame();
-</script>
-
+                
+                element.addEventListener('dragend', function() {
+                    setTimeout(() => this.style.opacity = '1', 0);
+                    draggedElement = null;
+                });
+            });
+            
+            [leftPan, rightPan].forEach(pan => {
+                pan.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('active');
+                });
+                
+                pan.addEventListener('dragleave', function() {
+                    this.classList.remove('active');
+                });
+                
+                pan.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('active');
+                    
+                    if (draggedElement) {
+                        // Inverser le signe si on déplace un nombre d'un côté à l'autre
+                        if (draggedElement.classList.contains('number') && 
+                            draggedElement.parentElement !== this) {
+                            
+                            const operator = draggedElement.previousElementSibling;
+                            
+                            if (operator && operator.classList.contains('operator')) {
+                                if (operator.textContent === '+') {
+                                    operator.textContent = '-';
+                                } else {
+                                    operator.textContent = '+';
+                                }
+                            }
+                        }
+                        
+                        this.appendChild(draggedElement);
+                        updateEquation();
+                        checkSolution();
+                    }
+                });
+            });
+            
+            // Mise à jour de l'affichage de l'équation
+            function updateEquation() {
+                const leftElements = Array.from(leftPan.querySelectorAll('.element'));
+                const rightElements = Array.from(rightPan.querySelectorAll('.element'));
+                
+                let leftSide = '';
+                let rightSide = '';
+                
+                leftElements.forEach(el => {
+                    if (el.classList.contains('operator')) {
+                        leftSide += ` ${el.textContent} `;
+                    } else {
+                        leftSide += el.textContent;
+                    }
+                });
+                
+                rightElements.forEach(el => {
+                    if (el.classList.contains('operator')) {
+                        rightSide += ` ${el.textContent} `;
+                    } else {
+                        rightSide += el.textContent;
+                    }
+                });
+                
+                equationDisplay.textContent = `${leftSide} = ${rightSide}`;
+            }
+            
+            // Vérifier la solution
+            function checkSolution() {
+                const leftElements = Array.from(leftPan.querySelectorAll('.element'));
+                const rightElements = Array.from(rightPan.querySelectorAll('.element'));
+                
+                // Solution pour niveau 1: x seul à gauche et nombre à droite
+                if (leftElements.length === 1 && leftElements[0].classList.contains('variable') &&
+                    rightElements.length === 1 && rightElements[0].classList.contains('number')) {
+                    
+                    feedback.textContent = 'Bravo ! Tu as résolu l\'équation : x = ' + rightElements[0].textContent;
+                    feedback.classList.add('celebrate');
+                    
+                    setTimeout(() => {
+                        feedback.classList.remove('celebrate');
+                    }, 1500);
+                }
+            }
+            
+            // Boutons de contrôle
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                // Réinitialiser le plateau
+                leftPan.innerHTML = `
+                    <div class="element variable" draggable="true">x</div>
+                    <div class="element operator" draggable="true">+</div>
+                    <div class="element number" draggable="true">3</div>
+                `;
+                rightPan.innerHTML = `
+                    <div class="element number" draggable="true">8</div>
+                `;
+                
+                // Réactiver le drag and drop
+                const newElements = document.querySelectorAll('.element');
+                newElements.forEach(el => {
+                    el.addEventListener('dragstart', function() {
+                        draggedElement = this;
+                        setTimeout(() => this.style.opacity = '0.4', 0);
+                    });
+                    
+                    el.addEventListener('dragend', function() {
+                        setTimeout(() => this.style.opacity = '1', 0);
+                        draggedElement = null;
+                    });
+                });
+                
+                updateEquation();
+                feedback.textContent = 'Déplace les éléments pour isoler x !';
+            });
+            
+            document.getElementById('hint-btn').addEventListener('click', function() {
+                feedback.textContent = 'Astuce : Déplace le +3 à droite en changeant son signe !';
+            });
+            
+            // Simuler une progression
+            document.getElementById('next-level').addEventListener('click', function() {
+                feedback.textContent = 'Niveau suivant : Équations avec soustraction';
+            });
+            
+            document.getElementById('prev-level').addEventListener('click', function() {
+                feedback.textContent = 'Retour au niveau précédent';
+            });
+            
+            // Initialiser l'affichage
+            updateEquation();
+        });
+    </script>
 </body>
 </html>
