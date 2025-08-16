@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Jeu des Équations V2</title>
+    <title>Le Jeu des Équations V3 (Corrigé)</title>
     <style>
         :root {
             --bg-color: #f0f8ff;
@@ -91,6 +91,7 @@
             color: white;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             animation: popIn 0.4s ease-out;
+            border: 4px solid transparent; /* Ajout pour la sélection */
         }
 
         .variable {
@@ -100,10 +101,19 @@
 
         .number {
             background-color: var(--number-color);
-            cursor: grab;
+        }
+
+        .movable { /* Nouvelle classe pour les nombres déplaçables */
+            cursor: pointer;
         }
         
-        .number.dragging {
+        .movable.selected { /* Style pour le nombre sélectionné */
+            border-color: var(--main-color);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 99, 71, 0.5);
+        }
+        
+        .movable.dragging {
             opacity: 0.5;
             cursor: grabbing;
         }
@@ -120,6 +130,7 @@
             font-size: 2.5em;
             color: var(--main-color);
             transition: background-color 0.3s, transform 0.3s;
+            cursor: pointer;
         }
         
         #drop-zone.over {
@@ -135,13 +146,8 @@
             color: var(--main-color);
         }
         
-        .feedback-correct {
-            animation: tada 0.8s;
-        }
-        
-        .feedback-incorrect {
-            animation: shake 0.5s;
-        }
+        .feedback-correct { animation: tada 0.8s; }
+        .feedback-incorrect { animation: shake 0.5s; }
 
         button {
             background-color: var(--main-color);
@@ -156,45 +162,20 @@
             transition: background-color 0.2s;
         }
 
-        button:hover {
-            background-color: #e5533d;
-        }
+        button:hover { background-color: #e5533d; }
         
-        /* Animations */
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-        
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0); }
-        }
-        
-        @keyframes fadeInDown {
-            0% { opacity: 0; transform: translateY(-20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-        
-        @keyframes tada {
-            0% {transform: scale(1);}
-            10%, 20% {transform: scale(0.9) rotate(-3deg);}
-            30%, 50%, 70%, 90% {transform: scale(1.1) rotate(3deg);}
-            40%, 60%, 80% {transform: scale(1.1) rotate(-3deg);}
-            100% {transform: scale(1) rotate(0);}
-        }
+        /* Animations (inchangées) */
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0); } }
+        @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-20px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        @keyframes tada { 0% {transform: scale(1);} 10%, 20% {transform: scale(0.9) rotate(-3deg);} 30%, 50%, 70%, 90% {transform: scale(1.1) rotate(3deg);} 40%, 60%, 80% {transform: scale(1.1) rotate(-3deg);} 100% {transform: scale(1) rotate(0);} }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Le Jeu des Équations V2</h1>
+    <h1>Le Jeu des Équations V3</h1>
     <div id="level-display">Niveau 1</div>
     <div id="equation-zone">
         <div id="equation-container">
@@ -217,15 +198,15 @@
     const dropZone = document.getElementById('drop-zone');
     const levelDisplay = document.getElementById('level-display');
 
-    // Contexte Audio pour les sons
+    // Contexte Audio
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
     // État du jeu
     let currentEquation = {};
     let level = 1;
-    let draggedElement = null;
+    let activeElement = null; // Remplacera draggedElement et selectedElement
 
-    // --- Fonctions Audio ---
+    // --- Fonctions Audio (inchangées) ---
     function playSound(type) {
         if (!audioContext) return;
         const oscillator = audioContext.createOscillator();
@@ -234,70 +215,45 @@
         gainNode.connect(audioContext.destination);
 
         if (type === 'correct') {
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+            oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
         } else if (type === 'incorrect') {
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+            oscillator.type = 'square'; oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
         } else if (type === 'win') {
-            // Un petit arpège
             const freqs = [523.25, 659.25, 783.99];
-            freqs.forEach((freq, i) => {
-                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
-            });
-            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+            freqs.forEach((freq, i) => { oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15); });
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
         }
         
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
+        oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.5);
     }
 
     // --- Logique du Jeu ---
-
     function generateEquation() {
         let a, b, c, x;
-        if (level < 3) { // Niveaux 1-2: x + b = c
-            a = 1;
-            b = Math.floor(Math.random() * 5) + 1;
-            x = Math.floor(Math.random() * 5) + 1;
-            c = x + b;
-        } else { // Niveaux 3+: ax + b = c
-            a = Math.floor(Math.random() * 3) + 2; // a entre 2 et 4
-            b = Math.floor(Math.random() * 10) + 1;
-            x = Math.floor(Math.random() * 4) + 1;
-            c = a * x + b;
-        }
+        if (level < 3) { a = 1; b = Math.floor(Math.random() * 5) + 1; x = Math.floor(Math.random() * 5) + 1; c = x + b; } 
+        else { a = Math.floor(Math.random() * 3) + 2; b = Math.floor(Math.random() * 10) + 1; x = Math.floor(Math.random() * 4) + 1; c = a * x + b; }
         return { a, b, c, x };
     }
 
     function displayEquation(eq) {
-        leftSide.innerHTML = '';
-        rightSide.innerHTML = '';
-
-        // Côté gauche
-        for (let i = 0; i < eq.a; i++) {
-            createAndAppendElement('x', 'variable', leftSide);
-        }
-        createAndAppendElement(eq.b, 'number', leftSide, true);
-
-        // Côté droit
+        leftSide.innerHTML = ''; rightSide.innerHTML = '';
+        for (let i = 0; i < eq.a; i++) { createAndAppendElement('x', 'variable', leftSide); }
+        createAndAppendElement(eq.b, 'number movable', leftSide, true);
         createAndAppendElement(eq.c, 'number', rightSide, false);
     }
 
-    function createAndAppendElement(value, type, parent, draggable = false) {
+    function createAndAppendElement(value, type, parent, isMovable = false) {
         const el = document.createElement('div');
         el.className = `element ${type}`;
         el.textContent = value;
         el.dataset.value = value;
         
-        if (draggable) {
+        if (isMovable) {
             el.draggable = true;
-            el.id = `draggable-number-${value}`;
+            el.id = `movable-number-${value}`;
+            el.addEventListener('click', handleElementClick);
             el.addEventListener('dragstart', handleDragStart);
             el.addEventListener('dragend', handleDragEnd);
         }
@@ -310,10 +266,29 @@
         if (isCorrect === false) playSound('incorrect');
     }
 
-    // --- Gestion du Glisser-Déposer ---
+    // --- Gestion des Interactions (Clic + Glisser-Déposer) ---
     
+    function handleElementClick(e) {
+        const clickedElement = e.target;
+        // Désélectionner si on clique à nouveau sur le même élément
+        if (activeElement === clickedElement) {
+            activeElement.classList.remove('selected');
+            activeElement = null;
+            return;
+        }
+        // Désélectionner l'ancien élément s'il y en a un
+        if (activeElement) {
+            activeElement.classList.remove('selected');
+        }
+        // Sélectionner le nouvel élément
+        activeElement = clickedElement;
+        activeElement.classList.add('selected');
+        updateFeedback("Maintenant, clique sur la zone cible '-' pour soustraire.", true);
+    }
+
     function handleDragStart(e) {
-        draggedElement = e.target;
+        if (activeElement) activeElement.classList.remove('selected');
+        activeElement = e.target;
         setTimeout(() => e.target.classList.add('dragging'), 0);
     }
 
@@ -321,76 +296,70 @@
         e.target.classList.remove('dragging');
     }
 
-    dropZone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropZone.classList.add('over');
-    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('over'); });
+    dropZone.addEventListener('drop', handleTargetInteraction);
+    dropZone.addEventListener('click', handleTargetInteraction);
 
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('over');
-    });
-
-    dropZone.addEventListener('drop', e => {
+    function handleTargetInteraction(e) {
         e.preventDefault();
         dropZone.classList.remove('over');
-        if (draggedElement && parseInt(draggedElement.dataset.value) === currentEquation.b) {
-            handleCorrectDrop();
-        } else {
-            updateFeedback("Oups ! Ce n'est pas le bon nombre à déplacer.", false);
+
+        if (!activeElement) {
+            updateFeedback("Sélectionne d'abord un nombre à déplacer !", false);
+            return;
         }
-    });
+
+        if (parseInt(activeElement.dataset.value) === currentEquation.b) {
+            handleCorrectAction(activeElement);
+        } else {
+            updateFeedback("Oups ! Ce n'est pas le bon nombre.", false);
+            if (activeElement) activeElement.classList.remove('selected');
+            activeElement = null;
+        }
+    }
     
-    function handleCorrectDrop() {
+    function handleCorrectAction(element) {
         playSound('correct');
         updateFeedback("Parfait ! On fait la même chose de l'autre côté.", true);
+        element.classList.remove('selected', 'dragging');
 
-        // Animer et retirer l'élément glissé
-        draggedElement.style.animation = 'fadeOut 0.5s forwards';
-        setTimeout(() => leftSide.removeChild(draggedElement), 500);
+        // On ne peut plus interagir avec cet élément
+        element.style.pointerEvents = 'none';
 
-        // Mettre à jour la valeur à droite
+        element.style.animation = 'fadeOut 0.5s forwards';
+        setTimeout(() => leftSide.removeChild(element), 500);
+
         setTimeout(() => {
             const rightNumber = rightSide.querySelector('.number');
             const newValue = currentEquation.c - currentEquation.b;
-            
             rightNumber.style.animation = 'popIn 0.5s';
             rightNumber.textContent = newValue;
             rightNumber.dataset.value = newValue;
-
             checkCompletion();
         }, 600);
+        
+        activeElement = null;
     }
     
     function checkCompletion() {
         const { a, x } = currentEquation;
-        
         if (a === 1) {
-            // Le jeu est terminé pour ce niveau
             setTimeout(finishLevel, 1000);
         } else {
-            // Étape de division
             feedbackDiv.textContent = `Maintenant, on divise par ${a}.`;
             setTimeout(() => {
                 const rightNumber = rightSide.querySelector('.number');
                 rightNumber.textContent = x;
                 rightNumber.dataset.value = x;
-                
-                leftSide.querySelectorAll('.variable').forEach(v => {
-                    if (v.textContent === 'x') { // Keep one x
-                        v.style.animation = 'tada 0.8s';
-                    } else {
-                        v.style.animation = 'fadeOut 0.5s forwards';
-                    }
+                leftSide.querySelectorAll('.variable').forEach((v, index) => {
+                    if (index === 0) { v.style.animation = 'tada 0.8s'; } 
+                    else { v.style.animation = 'fadeOut 0.5s forwards'; }
                 });
-                
-                // Remove extra 'x' elements after animation
-                 setTimeout(() => {
+                setTimeout(() => {
                     const variables = leftSide.querySelectorAll('.variable');
-                    for(let i=1; i < variables.length; i++) {
-                       leftSide.removeChild(variables[i]);
-                    }
-                 }, 500);
-
+                    for(let i = 1; i < variables.length; i++) { leftSide.removeChild(variables[i]); }
+                }, 500);
                 finishLevel();
             }, 1500);
         }
@@ -401,6 +370,7 @@
         updateFeedback(`Bravo ! x = ${currentEquation.x}`, true);
         feedbackDiv.classList.add('feedback-correct');
         nextButton.style.display = 'inline-block';
+        dropZone.style.display = 'none';
     }
 
     function startNewLevel() {
@@ -409,15 +379,15 @@
     }
 
     function startGame() {
+        if(activeElement) activeElement.classList.remove('selected');
+        activeElement = null;
         levelDisplay.textContent = `Niveau ${level}`;
         currentEquation = generateEquation();
         displayEquation(currentEquation);
         feedbackDiv.textContent = 'Isole la boîte jaune (x) !';
         feedbackDiv.className = '';
         nextButton.style.display = 'none';
-        dropZone.style.display = 'flex'; // Afficher la drop zone
-        
-        // Cacher la drop zone si l'équation est déjà résolue (x = c)
+        dropZone.style.display = 'flex';
         if (currentEquation.b === 0) {
            dropZone.style.display = 'none';
            checkCompletion();
@@ -425,8 +395,6 @@
     }
     
     nextButton.addEventListener('click', startNewLevel);
-
-    // Démarrer le jeu
     startGame();
 </script>
 
